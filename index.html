@@ -109,7 +109,7 @@
                     Heute
                 </button>
                 <button id="openAdminBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/40 transition flex items-center gap-1.5">
-                    <i class="fa-solid fa-plus text-xs"></i> Event Manager
+                    <i class="fa-solid fa-lock text-xs"></i> Event Manager
                 </button>
             </div>
         </div>
@@ -194,6 +194,30 @@
         </div>
     </div>
 
+    <!-- LOGIN MODAL (NEU) -->
+    <div id="loginModal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-purple-500/40 rounded-2xl max-w-sm w-full p-6 shadow-2xl relative glow-purple">
+            <button id="closeLoginBtn" class="absolute top-4 right-4 text-slate-400 hover:text-white transition">
+                <i class="fa-solid fa-xmark text-xl"></i>
+            </button>
+            <div class="flex items-center gap-2 mb-3">
+                <i class="fa-solid fa-lock text-purple-400 text-lg"></i>
+                <h2 class="text-lg font-gaming font-bold text-purple-300">Admin Login</h2>
+            </div>
+            <p class="text-xs text-slate-400 mb-4">Gib das Passwort ein, um den Event Manager zu öffnen.</p>
+            <form id="loginForm" class="space-y-3">
+                <div>
+                    <input type="password" id="adminPasswordInput" required placeholder="Passwort eingeben..." 
+                        class="w-full bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:border-purple-400">
+                    <p id="loginError" class="text-[10px] text-red-400 mt-1 hidden">Falsches Passwort!</p>
+                </div>
+                <button type="submit" class="w-full py-2.5 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-lg font-gaming text-xs font-bold text-white hover:opacity-90 transition shadow-lg">
+                    EINLOGGEN
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- ADMIN / ADD EVENT MODAL -->
     <div id="adminModal" class="fixed inset-0 bg-black/80 backdrop-blur-md hidden items-center justify-center p-4 z-50">
         <div class="bg-slate-900 border border-cyan-500/40 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative glow-cyan max-h-[90vh] overflow-y-auto">
@@ -201,7 +225,12 @@
                 <i class="fa-solid fa-xmark text-xl"></i>
             </button>
 
-            <h2 class="text-lg font-gaming font-bold text-cyan-400 mb-1">EVENT MANAGER</h2>
+            <div class="flex justify-between items-center mb-1">
+                <h2 class="text-lg font-gaming font-bold text-cyan-400">EVENT MANAGER</h2>
+                <button id="logoutBtn" class="text-[10px] text-red-400 hover:text-red-300 bg-red-950/40 border border-red-900/50 px-2.5 py-1 rounded-md transition flex items-center gap-1.5 mr-6">
+                    <i class="fa-solid fa-right-from-bracket"></i> Abmelden
+                </button>
+            </div>
             <p class="text-xs text-slate-400 mb-4">Erstelle neue Events oder verwalte deine Daten.</p>
 
             <!-- TAB SYSTEM -->
@@ -287,6 +316,9 @@
 
     <!-- JAVASCRIPT LOGIK -->
     <script>
+        // ADMIN PASSWORT HIER ÄNDERN (Standard: admin123)
+        const ADMIN_PASSWORD = "admin123";
+
         // BEISPIEL-DATEN FÜR GAMING CREATOR
         const defaultEvents = [
             {
@@ -348,6 +380,11 @@
             renderUpcomingEvents();
             setupEventListeners();
         });
+
+        // Check Admin Auth Status
+        function isAdminLoggedIn() {
+            return sessionStorage.getItem('isAdminAuthenticated') === 'true';
+        }
 
         // Event Badge Color Helper
         function getCategoryColor(category) {
@@ -488,6 +525,7 @@
             const style = getCategoryColor(evt.category);
             const dateObj = new Date(evt.date);
             const formattedDate = `${dateObj.getDate()}. ${monthNames[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+            const loggedIn = isAdminLoggedIn();
 
             content.innerHTML = `
                 <div class="inline-block px-2.5 py-1 rounded-md text-xs font-bold ${style.bg} ${style.text} border ${style.border} mb-3">
@@ -519,9 +557,10 @@
                        class="flex-1 py-2.5 bg-gradient-to-r from-purple-600 to-cyan-500 rounded-xl font-bold text-xs text-white text-center hover:opacity-90 transition glow-purple">
                         <i class="fa-solid fa-external-link mr-1"></i> Zum Stream / Event
                     </a>` : ''}
-                    <button onclick="deleteEvent('${evt.id}')" class="px-3 py-2.5 bg-red-900/30 hover:bg-red-800/50 border border-red-500/40 text-red-300 rounded-xl text-xs transition">
+                    ${loggedIn ? `
+                    <button onclick="deleteEvent('${evt.id}')" class="px-3 py-2.5 bg-red-900/30 hover:bg-red-800/50 border border-red-500/40 text-red-300 rounded-xl text-xs transition" title="Event löschen">
                         <i class="fa-solid fa-trash"></i>
-                    </button>
+                    </button>` : ''}
                 </div>
             `;
 
@@ -531,6 +570,7 @@
 
         // Delete Event
         window.deleteEvent = function(id) {
+            if (!isAdminLoggedIn()) return;
             events = events.filter(e => e.id !== id);
             localStorage.setItem('gaming_calendar_events', JSON.stringify(events));
             document.getElementById('eventModal').classList.add('hidden');
@@ -586,11 +626,53 @@
                 document.getElementById('adminModal').classList.remove('flex');
             });
 
+            document.getElementById('closeLoginBtn').addEventListener('click', () => {
+                document.getElementById('loginModal').classList.add('hidden');
+                document.getElementById('loginModal').classList.remove('flex');
+            });
+
+            // Open Admin Button (Triggers Login Check)
             document.getElementById('openAdminBtn').addEventListener('click', () => {
+                if (isAdminLoggedIn()) {
+                    openAdminPanel();
+                } else {
+                    document.getElementById('adminPasswordInput').value = '';
+                    document.getElementById('loginError').classList.add('hidden');
+                    document.getElementById('loginModal').classList.remove('hidden');
+                    document.getElementById('loginModal').classList.add('flex');
+                }
+            });
+
+            // Login Form Submit
+            document.getElementById('loginForm').addEventListener('submit', (e) => {
+                e.preventDefault();
+                const enteredPassword = document.getElementById('adminPasswordInput').value;
+
+                if (enteredPassword === ADMIN_PASSWORD) {
+                    sessionStorage.setItem('isAdminAuthenticated', 'true');
+                    document.getElementById('loginModal').classList.add('hidden');
+                    document.getElementById('loginModal').classList.remove('flex');
+                    openAdminPanel();
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            });
+
+            // Logout Button
+            document.getElementById('logoutBtn').addEventListener('click', () => {
+                sessionStorage.removeItem('isAdminAuthenticated');
+                document.getElementById('adminModal').classList.add('hidden');
+                document.getElementById('adminModal').classList.remove('flex');
+                renderCalendar();
+                renderUpcomingEvents();
+                alert('Du hast dich erfolgreich abgemeldet.');
+            });
+
+            function openAdminPanel() {
                 document.getElementById('adminModal').classList.remove('hidden');
                 document.getElementById('adminModal').classList.add('flex');
                 document.getElementById('jsonArea').value = JSON.stringify(events, null, 2);
-            });
+            }
 
             // Admin Modal Tabs
             const formTabBtn = document.getElementById('tabFormBtn');
@@ -616,6 +698,7 @@
             // Add Event Form Submit
             document.getElementById('addEventForm').addEventListener('submit', (e) => {
                 e.preventDefault();
+                if (!isAdminLoggedIn()) return;
 
                 const newEvt = {
                     id: Date.now().toString(),
@@ -649,6 +732,7 @@
             });
 
             document.getElementById('importJsonBtn').addEventListener('click', () => {
+                if (!isAdminLoggedIn()) return;
                 try {
                     const parsed = JSON.parse(document.getElementById('jsonArea').value);
                     if (Array.isArray(parsed)) {
