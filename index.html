@@ -1,424 +1,185 @@
 <!DOCTYPE html>
 <html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Stream & Event Schedule</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-    }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gaming Event Kalender</title>
+    <!-- Tailwind CSS CDN für schnelles Responsive Design -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome für Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Orbitron (Gaming style) & Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Orbitron:wght@500;700;900&display=swap" rel="stylesheet">
 
-    body {
-      background: #0f111a;
-      color: #e0e6ed;
-      padding: 20px;
-    }
+    <style>
+        /* Custom Customizations & Neon Effects */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0d17;
+            color: #e2e8f0;
+            margin: 0;
+            padding: 10px;
+        }
 
-    .gc-widget {
-      background: #0f111a;
-      border-radius: 12px;
-      padding: 24px;
-      border: 1px solid rgba(138, 43, 226, 0.3);
-      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 15px rgba(138, 43, 226, 0.2);
-      max-width: 900px;
-      margin: 0 auto;
-    }
+        .font-gaming {
+            font-family: 'Orbitron', sans-serif;
+        }
 
-    h2 {
-      font-size: 2rem;
-      font-weight: 800;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      color: #ffffff;
-      text-shadow: 0 0 10px rgba(0, 240, 255, 0.6);
-      margin-bottom: 6px;
-    }
+        /* Neon Glow Effects */
+        .glow-purple {
+            box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+        }
+        .glow-cyan {
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.4);
+        }
+        .glow-pink {
+            box-shadow: 0 0 15px rgba(236, 72, 153, 0.4);
+        }
 
-    p.gc-sub {
-      color: #94a3b8;
-      font-size: 0.95rem;
-      margin-bottom: 20px;
-    }
+        .text-glow-cyan {
+            text-shadow: 0 0 8px rgba(6, 182, 212, 0.6);
+        }
+        .text-glow-purple {
+            text-shadow: 0 0 8px rgba(168, 85, 247, 0.6);
+        }
 
-    .gc-header-controls {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: space-between;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 20px;
-      background: rgba(22, 27, 38, 0.8);
-      padding: 12px 16px;
-      border-radius: 8px;
-    }
+        /* Cyberpunk Card Border Effect */
+        .cyber-border {
+            border: 1px solid rgba(168, 85, 247, 0.25);
+            background: linear-gradient(135deg, rgba(17, 24, 39, 0.95) 0%, rgba(15, 23, 42, 0.9) 100%);
+            backdrop-filter: blur(8px);
+        }
 
-    .gc-nav-group, .gc-filter-group {
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      gap: 8px;
-    }
+        .cyber-border:hover {
+            border-color: rgba(6, 182, 212, 0.5);
+        }
 
-    .gc-month-title {
-      font-size: 1.2rem;
-      font-weight: 700;
-      color: #00f0ff;
-      min-width: 140px;
-      text-align: center;
-    }
+        /* Day tile hover & active state */
+        .day-tile {
+            transition: all 0.2s ease-in-out;
+            min-height: 70px;
+        }
 
-    button {
-      background: #1e293b;
-      color: #f1f5f9;
-      border: 1px solid #334155;
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
+        .day-tile:hover {
+            transform: translateY(-2px);
+            background-color: rgba(30, 41, 59, 0.8);
+        }
 
-    button:hover {
-      background: #334155;
-      border-color: #00f0ff;
-      color: #00f0ff;
-      box-shadow: 0 0 8px rgba(0, 240, 255, 0.4);
-    }
-
-    button.gc-active {
-      background: linear-gradient(135deg, #8a2be2, #4a00e0);
-      border-color: #a855f7;
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(138, 43, 226, 0.5);
-    }
-
-    .gc-grid {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 6px;
-      margin-bottom: 24px;
-    }
-
-    .gc-day-header {
-      text-align: center;
-      font-weight: 700;
-      font-size: 0.8rem;
-      color: #64748b;
-      padding: 8px 0;
-      text-transform: uppercase;
-    }
-
-    .gc-day-cell {
-      background: #161b26;
-      border: 1px solid #242c3d;
-      border-radius: 6px;
-      min-height: 85px;
-      padding: 6px;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
-      transition: all 0.2s ease;
-    }
-
-    .gc-day-cell.gc-empty {
-      background: transparent;
-      border-color: transparent;
-    }
-
-    .gc-day-number {
-      font-size: 0.85rem;
-      font-weight: 600;
-      color: #cbd5e1;
-    }
-
-    .gc-day-cell.gc-today .gc-day-number {
-      color: #00f0ff;
-      font-weight: 800;
-    }
-
-    .gc-event-pill {
-      font-size: 0.68rem;
-      padding: 2px 4px;
-      border-radius: 3px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: #fff;
-      font-weight: 600;
-      margin-top: 2px;
-    }
-
-    .gc-cat-stream { background: #8a2be2; }
-    .gc-cat-turnier { background: #ff0055; }
-    .gc-cat-community { background: #00f0ff; color: #000; }
-    .gc-cat-special { background: #ffaa00; color: #000; }
-
-    .gc-admin-panel {
-      background: rgba(22, 27, 38, 0.95);
-      border: 1px solid #8a2be2;
-      border-radius: 8px;
-      padding: 16px;
-      margin-top: 20px;
-      display: none;
-    }
-
-    .gc-admin-panel h3 {
-      font-size: 1.1rem;
-      color: #00f0ff;
-      margin-bottom: 10px;
-    }
-
-    .gc-form-row {
-      display: flex;
-      gap: 8px;
-      flex-wrap: wrap;
-      margin-bottom: 10px;
-    }
-
-    .gc-form-row input, .gc-form-row select {
-      background: #0f111a;
-      border: 1px solid #334155;
-      color: #fff;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-    }
-
-    .gc-admin-event-list {
-      max-height: 150px;
-      overflow-y: auto;
-      margin-top: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .gc-admin-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      background: #0f111a;
-      padding: 6px 10px;
-      border-radius: 4px;
-      font-size: 0.85rem;
-    }
-
-    @media (max-width: 600px) {
-      .gc-day-cell { min-height: 60px; }
-      .gc-header-controls { flex-direction: column; align-items: stretch; }
-      .gc-nav-group, .gc-filter-group { justify-content: center; }
-    }
-  </style>
+        /* Custom Scrollbar for Event List */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a855f7;
+        }
+    </style>
 </head>
 <body>
 
-<div class="gc-widget">
-  <h2>Stream & Event Schedule</h2>
-  <p class="gc-sub">Verpasse keinen Stream, kein Turnier und kein Community-Event!</p>
+    <div class="max-w-5xl mx-auto my-4 p-4 md:p-6 rounded-2xl cyber-border shadow-2xl relative overflow-hidden">
+        
+        <!-- Background Decorative Elements -->
+        <div class="absolute -top-24 -right-24 w-60 h-60 bg-purple-600/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -bottom-24 -left-24 w-60 h-60 bg-cyan-500/10 rounded-full blur-3xl pointer-events-none"></div>
 
-  <div class="gc-header-controls">
-    <div class="gc-nav-group">
-      <button onclick="gcPrevMonth()">&lt;</button>
-      <span id="gc-month-display" class="gc-month-title"></span>
-      <button onclick="gcNextMonth()">&gt;</button>
-      <button onclick="gcToday()">Heute</button>
+        <!-- HEADER SECTION -->
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b border-slate-800">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 to-cyan-500 flex items-center justify-center glow-purple">
+                    <i class="fa-solid fa-gamepad text-white text-xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-2xl font-bold font-gaming tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-purple-400 via-cyan-400 to-pink-500">
+                        STREAM & EVENT SCHEDULE
+                    </h1>
+                    <p class="text-xs text-slate-400">Verpasse keinen Stream, Turnier oder Community-Event!</p>
+                </div>
+            </div>
+
+            <!-- Controls & Admin Toggle -->
+            <div class="flex items-center gap-2 flex-wrap justify-end">
+                <button id="todayBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition">
+                    Heute
+                </button>
+                <button id="openAdminBtn" class="px-3 py-1.5 text-xs font-semibold rounded-lg bg-purple-900/40 hover:bg-purple-800/60 text-purple-300 border border-purple-500/40 transition flex items-center gap-1.5">
+                    <i class="fa-solid fa-lock text-xs"></i> Event Manager
+                </button>
+            </div>
+        </div>
+
+        <!-- FILTER & NAVIGATION BAR -->
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-4 mb-6">
+            
+            <!-- Month Navigation -->
+            <div class="flex items-center gap-3 bg-slate-900/80 p-1.5 rounded-xl border border-slate-800 w-full sm:w-auto justify-between">
+                <button id="prevMonthBtn" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-purple-600/30 hover:text-purple-300 text-slate-300 flex items-center justify-center transition">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <span id="currentMonthYear" class="font-gaming font-bold text-lg px-4 text-cyan-400 text-glow-cyan min-w-[160px] text-center">
+                    Januar 2026
+                </span>
+                <button id="nextMonthBtn" class="w-9 h-9 rounded-lg bg-slate-800 hover:bg-purple-600/30 hover:text-purple-300 text-slate-300 flex items-center justify-center transition">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+
+            <!-- Category Filters -->
+            <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-2 sm:pb-0 text-xs">
+                <button class="filter-btn active px-3 py-1.5 rounded-lg font-medium transition bg-purple-600 text-white" data-category="all">
+                    Alle
+                </button>
+                <button class="filter-btn px-3 py-1.5 rounded-lg font-medium transition bg-slate-800/80 hover:bg-slate-700 text-slate-300" data-category="Stream">
+                    <span class="w-2 h-2 rounded-full bg-purple-400 inline-block mr-1"></span> Stream
+                </button>
+                <button class="filter-btn px-3 py-1.5 rounded-lg font-medium transition bg-slate-800/80 hover:bg-slate-700 text-slate-300" data-category="Tournament">
+                    <span class="w-2 h-2 rounded-full bg-red-400 inline-block mr-1"></span> Turnier
+                </button>
+                <button class="filter-btn px-3 py-1.5 rounded-lg font-medium transition bg-slate-800/80 hover:bg-slate-700 text-slate-300" data-category="Community">
+                    <span class="w-2 h-2 rounded-full bg-cyan-400 inline-block mr-1"></span> Community
+                </button>
+                <button class="filter-btn px-3 py-1.5 rounded-lg font-medium transition bg-slate-800/80 hover:bg-slate-700 text-slate-300" data-category="Special">
+                    <span class="w-2 h-2 rounded-full bg-amber-400 inline-block mr-1"></span> Special
+                </button>
+            </div>
+        </div>
+
+        <!-- MAIN CALENDAR GRID & UPCOMING EVENTS SIDEBAR -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- CALENDAR GRID (2 Columns wide on LG) -->
+            <div class="lg:col-span-2">
+                <!-- Days Header -->
+                <div class="grid grid-cols-7 gap-1 text-center font-gaming text-xs text-slate-400 font-semibold mb-2">
+                    <div>MO</div><div>DI</div><div>MI</div><div>DO</div><div>FR</div><div>SA</div><div>SO</div>
+                </div>
+
+                <!-- Calendar Days Grid -->
+                <div id="calendarGrid" class="grid grid-cols-7 gap-1.5">
+                    <!-- Javascript populates days here -->
+                </div>
+            </div>
+
+            <!-- UPCOMING EVENTS LIST SIDEBAR -->
+            <div class="bg-slate-900/60 rounded-xl p-4 border border-slate-800/80 flex flex-col h-full">
+                <h3 class="font-gaming font-bold text-sm text-purple-300 mb-3 flex items-center gap-2">
+                    <i class="fa-solid fa-bolt text-amber-400"></i> NÄCHSTE EVENTS
+                </h3>
+                
+                <div id="upcomingEventsList" class="space-y-2.5 overflow-y-auto max-h-[380px] pr-1 flex-grow">
+                    <!-- JS injects upcoming events here -->
+                </div>
+            </div>
+
+        </div>
+
     </div>
 
-    <div class="gc-filter-group">
-      <button class="gc-active" onclick="gcFilter('all', this)">Alle</button>
-      <button onclick="gcFilter('stream', this)">Stream</button>
-      <button onclick="gcFilter('turnier', this)">Turnier</button>
-      <button onclick="gcFilter('community', this)">Community</button>
-      <button onclick="gcFilter('special', this)">Special</button>
-      <button onclick="toggleAdminPanel()" style="border-color: #8a2be2;">⚙️ Admin</button>
-    </div>
-  </div>
-
-  <div class="gc-grid" id="gc-calendar-grid"></div>
-
-  <!-- Admin Panel (Passwortgeschützt) -->
-  <div id="gc-admin-panel" class="gc-admin-panel">
-    <h3>Event Manager (Admin-Bereich)</h3>
-    <div class="gc-form-row">
-      <input type="date" id="gc-new-date">
-      <input type="text" id="gc-new-title" placeholder="Event Titel">
-      <input type="text" id="gc-new-time" placeholder="z.B. 20:00 Uhr">
-      <select id="gc-new-cat">
-        <option value="stream">Stream</option>
-        <option value="turnier">Turnier</option>
-        <option value="community">Community</option>
-        <option value="special">Special</option>
-      </select>
-      <button onclick="gcAddEvent()" style="background: #8a2be2; border-color: #a855f7;">Hinzufügen</button>
-    </div>
-    <div class="gc-admin-event-list" id="gc-admin-list"></div>
-  </div>
-</div>
-
-<script>
-  // 👉 HIER DEIN PASSWORT ÄNDERN:
-  const ADMIN_PASS = "0llie666"; 
-
-  // Standard Events (oder aus Browser-Speicher laden)
-  let gcEvents = JSON.parse(localStorage.getItem('gc_custom_events')) || [
-    { date: '2026-10-24', title: 'Resident Evil Stream', time: '20:00 Uhr', cat: 'stream' },
-    { date: '2026-10-28', title: 'Tekken 3 Turnier', time: '19:00 Uhr', cat: 'turnier' },
-    { date: '2026-10-31', title: 'Halloween Community Stream', time: '18:00 Uhr', cat: 'special' }
-  ];
-
-  let gcCurrentDate = new Date();
-  let gcCurrentFilter = 'all';
-  const gcMonthNames = ["Januar", "Februar", "März", "April", "Mai", "Juni", "Juli", "August", "September", "Oktober", "November", "Dezember"];
-
-  function gcRenderCalendar() {
-    const year = gcCurrentDate.getFullYear();
-    const month = gcCurrentDate.getMonth();
-    document.getElementById('gc-month-display').innerText = `${gcMonthNames[month]} ${year}`;
-
-    const grid = document.getElementById('gc-calendar-grid');
-    grid.innerHTML = '';
-
-    const days = ['MO', 'DI', 'MI', 'DO', 'FR', 'SA', 'SO'];
-    days.forEach(d => {
-      const h = document.createElement('div');
-      h.className = 'gc-day-header';
-      h.innerText = d;
-      grid.appendChild(h);
-    });
-
-    const firstDayIndex = (new Date(year, month, 1).getDay() + 6) % 7;
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    for (let i = 0; i < firstDayIndex; i++) {
-      const empty = document.createElement('div');
-      empty.className = 'gc-day-cell gc-empty';
-      grid.appendChild(empty);
-    }
-
-    const today = new Date();
-    for (let day = 1; day <= daysInMonth; day++) {
-      const cell = document.createElement('div');
-      cell.className = 'gc-day-cell';
-      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-      
-      if (today.getFullYear() === year && today.getMonth() === month && today.getDate() === day) {
-        cell.classList.add('gc-today');
-      }
-
-      const num = document.createElement('div');
-      num.className = 'gc-day-number';
-      num.innerText = day;
-      cell.appendChild(num);
-
-      const dayEvents = gcEvents.filter(e => e.date === dateStr && (gcCurrentFilter === 'all' || e.cat === gcCurrentFilter));
-      dayEvents.forEach(e => {
-        const pill = document.createElement('div');
-        pill.className = `gc-event-pill gc-cat-${e.cat}`;
-        pill.innerText = e.title;
-        cell.appendChild(pill);
-      });
-
-      grid.appendChild(cell);
-    }
-  }
-
-  function gcPrevMonth() {
-    gcCurrentDate.setMonth(gcCurrentDate.getMonth() - 1);
-    gcRenderCalendar();
-  }
-
-  function gcNextMonth() {
-    gcCurrentDate.setMonth(gcCurrentDate.getMonth() + 1);
-    gcRenderCalendar();
-  }
-
-  function gcToday() {
-    gcCurrentDate = new Date();
-    gcRenderCalendar();
-  }
-
-  function gcFilter(cat, btn) {
-    gcCurrentFilter = cat;
-    document.querySelectorAll('.gc-filter-group button').forEach(b => b.classList.remove('gc-active'));
-    btn.classList.add('gc-active');
-    gcRenderCalendar();
-  }
-
-  // Admin Logik mit Passwort
-  function toggleAdminPanel() {
-    const panel = document.getElementById('gc-admin-panel');
-    if (panel.style.display === 'block') {
-      panel.style.display = 'none';
-      return;
-    }
-
-    // Passwort prüfen
-    let isAuthenticated = sessionStorage.getItem('gc_auth') === 'true';
-    if (!isAuthenticated) {
-      const pw = prompt("Bitte gib das Admin-Passwort ein:");
-      if (pw === ADMIN_PASS) {
-        sessionStorage.setItem('gc_auth', 'true');
-        isAuthenticated = true;
-      } else if (pw !== null) {
-        alert("Falsches Passwort!");
-        return;
-      }
-    }
-
-    if (isAuthenticated) {
-      panel.style.display = 'block';
-      gcRenderAdminList();
-    }
-  }
-
-  function gcAddEvent() {
-    const date = document.getElementById('gc-new-date').value;
-    const title = document.getElementById('gc-new-title').value;
-    const time = document.getElementById('gc-new-time').value;
-    const cat = document.getElementById('gc-new-cat').value;
-
-    if (!date || !title) {
-      alert("Bitte Datum und Titel angeben!");
-      return;
-    }
-
-    gcEvents.push({ date, title, time: time || 'Ganze Zeit', cat });
-    localStorage.setItem('gc_custom_events', JSON.stringify(gcEvents));
-    
-    document.getElementById('gc-new-title').value = '';
-    document.getElementById('gc-new-time').value = '';
-    gcRenderCalendar();
-    gcRenderAdminList();
-  }
-
-  function gcDeleteEvent(index) {
-    gcEvents.splice(index, 1);
-    localStorage.setItem('gc_custom_events', JSON.stringify(gcEvents));
-    gcRenderCalendar();
-    gcRenderAdminList();
-  }
-
-  function gcRenderAdminList() {
-    const list = document.getElementById('gc-admin-list');
-    list.innerHTML = '';
-    gcEvents.forEach((e, index) => {
-      const item = document.createElement('div');
-      item.className = 'gc-admin-item';
-      item.innerHTML = `
-        <span><b>${e.date}</b> - ${e.title} (${e.time})</span>
-        <button onclick="gcDeleteEvent(${index})" style="background: #ff0055; border-color: #ff0055; padding: 2px 8px; font-size: 0.75rem;">Löschen</button>
-      `;
-      list.appendChild(item);
-    });
-  }
-
-  gcRenderCalendar();
-</script>
-
-</body>
-</html>
+    <!-- EVENT DETAILS MODAL -->
+    <div id="eventModal" class="fixed inset
